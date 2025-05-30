@@ -1,0 +1,120 @@
+﻿@page "/products"
+@inject ProductService.ProductServiceClient ProductClient
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer // Cho .NET 8
+
+<h3>Danh sách Sản phẩm</h3>
+
+@if (products == null && !loadFailed)
+{
+    <p><em>Đang tải sản phẩm...</em></p>
+}
+else if (loadFailed)
+{
+    <p class="text-danger"><em>Không thể tải danh sách sản phẩm: @errorMessage</em></p>
+}
+else if (!products.Any())
+{
+    <p><em>Chưa có sản phẩm nào.</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tên sản phẩm</th>
+                <th>Giá</th>
+                <th>Tồn kho</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var product in products)
+            {
+                <tr>
+                    <td>@product.Id</td>
+                    <td>@product.Name</td>
+                    <td>@product.Price.ToString("N0") VND</td>  @* Định dạng giá tiền *@
+                    <td>@product.Stock</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => EditProduct(product.Id)">Sửa</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteProduct(product.Id)">Xóa</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<p>
+    <button class="btn btn-success" @onclick="AddNewProduct">Thêm sản phẩm mới</button>
+</p>
+
+@code {
+    private List<ProductModel>? products;
+    private bool loadFailed = false;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var response = await ProductClient.GetAllProductsAsync(new GetAllProductsRequest());
+            products = response.Products.ToList();
+            loadFailed = false;
+        }
+        catch (Grpc.Core.RpcException ex)
+        {
+            errorMessage = $"Lỗi gRPC: {ex.Status.Detail} (Code: {ex.StatusCode})";
+            loadFailed = true;
+            products = new List<ProductModel>(); // Khởi tạo rỗng để tránh null ref
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Lỗi không xác định: {ex.Message}";
+            loadFailed = true;
+            products = new List<ProductModel>();
+        }
+    }
+
+    void AddNewProduct()
+    {
+        NavigationManager.NavigateTo("/products/add");
+    }
+
+    void EditProduct(int productId)
+    {
+        NavigationManager.NavigateTo($"/products/edit/{productId}");
+    }
+
+    async Task DeleteProduct(int productId)
+    {
+        // TODO: Thêm hộp thoại xác nhận trước khi xóa
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa sản phẩm này?");
+        if (confirmed)
+        {
+            try
+            {
+                await ProductClient.DeleteProductAsync(new DeleteProductRequest { Id = productId });
+                // Tải lại danh sách sau khi xóa
+                await OnInitializedAsync();
+                StateHasChanged(); // Yêu cầu Blazor render lại UI
+            }
+            catch (Grpc.Core.RpcException ex)
+            {
+                errorMessage = $"Lỗi khi xóa: {ex.Status.Detail}";
+                // Cân nhắc hiển thị lỗi này trên UI một cách thân thiện hơn
+                Console.WriteLine(errorMessage);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Lỗi không xác định khi xóa: {ex.Message}";
+                Console.WriteLine(errorMessage);
+            }
+        }
+    }
+
+    [Inject] // Cần inject JSRuntime để gọi hàm confirm của JS
+    private IJSRuntime JSRuntime { get; set; } = default!;
+}

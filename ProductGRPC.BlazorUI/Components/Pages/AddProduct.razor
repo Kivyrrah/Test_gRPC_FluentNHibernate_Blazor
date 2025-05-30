@@ -1,0 +1,86 @@
+﻿@page "/products/add"
+@inject ProductService.ProductServiceClient ProductClient
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<h3>Thêm Sản phẩm mới</h3>
+
+<EditForm Model="@newProduct" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="name" class="form-label">Tên sản phẩm:</label>
+        <InputText id="name" class="form-control" @bind-Value="newProduct.Name" />
+        <ValidationMessage For="@(() => newProduct.Name)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="price" class="form-label">Giá:</label>
+        <InputNumber id="price" class="form-control" @bind-Value="newProduct.Price" />
+        <ValidationMessage For="@(() => newProduct.Price)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="stock" class="form-label">Tồn kho:</label>
+        <InputNumber id="stock" class="form-control" @bind-Value="newProduct.Stock" />
+        <ValidationMessage For="@(() => newProduct.Stock)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Lưu</button>
+    <button type="button" class="btn btn-secondary" @onclick="GoBack">Hủy</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p class="text-danger mt-3">@errorMessage</p>
+}
+
+
+@code {
+    // Model cục bộ cho form, có thể thêm các DataAnnotations nếu muốn
+    private ProductInputModel newProduct = new ProductInputModel();
+    private string errorMessage = string.Empty;
+
+    // Model này giúp xử lý kiểu decimal cho Price trên UI dễ dàng hơn
+    public class ProductInputModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Tên sản phẩm không được để trống")]
+        public string Name { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Range(0.01, double.MaxValue, ErrorMessage = "Giá phải lớn hơn 0")]
+        public decimal Price { get; set; } // Sử dụng decimal cho nhập liệu
+
+        [System.ComponentModel.DataAnnotations.Range(0, int.MaxValue, ErrorMessage = "Tồn kho không được âm")]
+        public int Stock { get; set; }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        errorMessage = string.Empty;
+        try
+        {
+            var request = new CreateProductRequest
+            {
+                Name = newProduct.Name,
+                Price = (double)newProduct.Price, // Chuyển đổi decimal sang double cho gRPC
+                Stock = newProduct.Stock
+            };
+            await ProductClient.CreateProductAsync(request);
+            NavigationManager.NavigateTo("/products");
+        }
+        catch (Grpc.Core.RpcException ex)
+        {
+            errorMessage = $"Lỗi gRPC: {ex.Status.Detail} (Code: {ex.StatusCode})";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Lỗi không xác định: {ex.Message}";
+        }
+    }
+
+    void GoBack()
+    {
+        NavigationManager.NavigateTo("/products");
+    }
+}

@@ -1,0 +1,12 @@
+C:\Users\truon\source\repos\ProductGRPC.Shared\bin\Debug\net8.0\ProductGRPC.Shared.deps.json
+C:\Users\truon\source\repos\ProductGRPC.Shared\bin\Debug\net8.0\ProductGRPC.Shared.dll
+C:\Users\truon\source\repos\ProductGRPC.Shared\bin\Debug\net8.0\ProductGRPC.Shared.pdb
+C:\Users\truon\source\repos\ProductGRPC.Shared\obj\Debug\net8.0\ProductGRPC.Shared.csproj.AssemblyReference.cache
+C:\Users\truon\source\repos\ProductGRPC.Shared\obj\Debug\net8.0\ProductGRPC.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\truon\source\repos\ProductGRPC.Shared\obj\Debug\net8.0\ProductGRPC.Shared.AssemblyInfoInputs.cache
+C:\Users\truon\source\repos\ProductGRPC.Shared\obj\Debug\net8.0\ProductGRPC.Shared.AssemblyInfo.cs
+C:\Users\truon\source\repos\ProductGRPC.Shared\obj\Debug\net8.0\ProductGRPC.Shared.csproj.CoreCompileInputs.cache
+C:\Users\truon\source\repos\ProductGRPC.Shared\obj\Debug\net8.0\ProductGRPC.Shared.dll
+C:\Users\truon\source\repos\ProductGRPC.Shared\obj\Debug\net8.0\refint\ProductGRPC.Shared.dll
+C:\Users\truon\source\repos\ProductGRPC.Shared\obj\Debug\net8.0\ProductGRPC.Shared.pdb
+C:\Users\truon\source\repos\ProductGRPC.Shared\obj\Debug\net8.0\ref\ProductGRPC.Shared.dll

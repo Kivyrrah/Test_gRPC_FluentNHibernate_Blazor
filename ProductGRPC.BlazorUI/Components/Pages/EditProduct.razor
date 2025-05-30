@@ -1,0 +1,147 @@
+﻿@page "/products/edit/{ProductId:int}"
+@inject ProductService.ProductServiceClient ProductClient
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<h3>Sửa Sản phẩm</h3>
+
+@if (productToEdit == null && !loadFailed)
+{
+    <p><em>Đang tải thông tin sản phẩm...</em></p>
+}
+else if (loadFailed)
+{
+    <p class="text-danger"><em>Không thể tải sản phẩm: @errorMessage</em></p>
+}
+else if (productToEdit != null)
+{
+    <EditForm Model="@productToEdit" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <input type="hidden" @bind-value="productToEdit.Id" />
+
+        <div class="mb-3">
+            <label for="name" class="form-label">Tên sản phẩm:</label>
+            <InputText id="name" class="form-control" @bind-Value="productToEdit.Name" />
+            <ValidationMessage For="@(() => productToEdit.Name)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="price" class="form-label">Giá:</label>
+            <InputNumber id="price" class="form-control" @bind-Value="productToEdit.Price" />
+            <ValidationMessage For="@(() => productToEdit.Price)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="stock" class="form-label">Tồn kho:</label>
+            <InputNumber id="stock" class="form-control" @bind-Value="productToEdit.Stock" />
+            <ValidationMessage For="@(() => productToEdit.Stock)" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+        <button type="button" class="btn btn-secondary" @onclick="GoBack">Hủy</button>
+    </EditForm>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage) && string.IsNullOrEmpty(productToEdit?.Name)) // Chỉ hiển thị lỗi nếu productToEdit chưa load được
+{
+    <p class="text-danger mt-3">@errorMessage</p>
+}
+else if (!string.IsNullOrEmpty(submitErrorMessage))
+{
+     <p class="text-danger mt-3">@submitErrorMessage</p>
+}
+
+
+@code {
+    [Parameter]
+    public int ProductId { get; set; }
+
+    private ProductInputModel? productToEdit; // Model cục bộ cho form
+    private bool loadFailed = false;
+    private string errorMessage = string.Empty; // Lỗi khi tải
+    private string submitErrorMessage = string.Empty; // Lỗi khi submit
+
+    // Model cục bộ, tương tự như AddProduct
+    public class ProductInputModel
+    {
+        public int Id { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Tên sản phẩm không được để trống")]
+        public string Name { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Range(0.01, double.MaxValue, ErrorMessage = "Giá phải lớn hơn 0")]
+        public decimal Price { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(0, int.MaxValue, ErrorMessage = "Tồn kho không được âm")]
+        public int Stock { get; set; }
+    }
+
+    protected override async Task OnParametersSetAsync() // Hoặc OnInitializedAsync nếu ProductId không thay đổi sau khi component được tạo
+    {
+        loadFailed = false;
+        errorMessage = string.Empty;
+        try
+        {
+            var grpcProduct = await ProductClient.GetProductByIdAsync(new GetProductRequest { Id = ProductId });
+            if (grpcProduct != null)
+            {
+                productToEdit = new ProductInputModel
+                {
+                    Id = grpcProduct.Id,
+                    Name = grpcProduct.Name,
+                    Price = (decimal)grpcProduct.Price, // Chuyển từ double của gRPC sang decimal
+                    Stock = grpcProduct.Stock
+                };
+            }
+            else
+            {
+                errorMessage = "Không tìm thấy sản phẩm.";
+                loadFailed = true;
+            }
+        }
+        catch (Grpc.Core.RpcException ex)
+        {
+            errorMessage = $"Lỗi gRPC: {ex.Status.Detail} (Code: {ex.StatusCode})";
+            loadFailed = true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Lỗi không xác định: {ex.Message}";
+            loadFailed = true;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (productToEdit == null) return;
+        submitErrorMessage = string.Empty;
+
+        try
+        {
+            var request = new UpdateProductRequest
+            {
+                Id = productToEdit.Id,
+                Name = productToEdit.Name,
+                Price = (double)productToEdit.Price, // Chuyển decimal sang double
+                Stock = productToEdit.Stock
+            };
+            await ProductClient.UpdateProductAsync(request);
+            NavigationManager.NavigateTo("/products");
+        }
+        catch (Grpc.Core.RpcException ex)
+        {
+            submitErrorMessage = $"Lỗi gRPC khi cập nhật: {ex.Status.Detail} (Code: {ex.StatusCode})";
+        }
+        catch (Exception ex)
+        {
+            submitErrorMessage = $"Lỗi không xác định khi cập nhật: {ex.Message}";
+        }
+    }
+
+    void GoBack()
+    {
+        NavigationManager.NavigateTo("/products");
+    }
+}

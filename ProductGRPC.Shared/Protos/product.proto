@@ -1,0 +1,57 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "ProductGRPC.Shared.Protos"; // Namespace C# sẽ được sinh ra
+
+package product;
+
+// Định nghĩa service Product
+service ProductService {
+  rpc GetProductById (GetProductRequest) returns (ProductModel);
+  rpc GetAllProducts (GetAllProductsRequest) returns (ProductListResponse);
+  rpc CreateProduct (CreateProductRequest) returns (ProductModel);
+  rpc UpdateProduct (UpdateProductRequest) returns (ProductModel);
+  rpc DeleteProduct (DeleteProductRequest) returns (DeleteProductResponse);
+}
+
+// Models
+message ProductModel {
+  int32 id = 1;
+  string name = 2;
+  double price = 3; // Sử dụng double cho price trong proto, map sang decimal ở C#
+  int32 stock = 4;
+}
+
+// Requests & Responses
+message GetProductRequest {
+  int32 id = 1;
+}
+
+message GetAllProductsRequest {
+  // Có thể trống hoặc thêm các tham số phân trang/sắp xếp sau này
+}
+
+message ProductListResponse {
+  repeated ProductModel products = 1;
+}
+
+message CreateProductRequest {
+  string name = 1;
+  double price = 2;
+  int32 stock = 3;
+}
+
+message UpdateProductRequest {
+  int32 id = 1;
+  string name = 2;
+  double price = 3;
+  int32 stock = 4;
+}
+
+message DeleteProductRequest {
+  int32 id = 1;
+}
+
+message DeleteProductResponse {
+  bool success = 1;
+  string message = 2; // Thông điệp tùy chọn
+}
